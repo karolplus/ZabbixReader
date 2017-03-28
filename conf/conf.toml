@@ -1,0 +1,17 @@
+# This is a TOML document.
+
+title = "TOML example"
+
+## zabbix input conf ##
+[input.zabbix]
+url = ""
+user = ""
+password = ""
+
+[output.rabbitmq]
+    url = "yyy.yyy.yyy.yyy"
+    port = 69
+    vhost = "/"
+    queue_name = "queue_name"
+    username = "username"
+    password  = "password"
