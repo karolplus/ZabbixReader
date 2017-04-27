@@ -13,6 +13,8 @@ __version__		= "v0.3"
 # 20/04/2017 - Added user friendly name in TOS key tag
 # 27/04/2017 - Added additional pattern to IP SLA test
 # 27/04/2017 - Parse variable to name bug fixing
+#
+#
 
 from zabbix.api import ZabbixAPI
 import json
