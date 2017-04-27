@@ -12,8 +12,7 @@ __version__		= "v0.3"
 # 07/04/2017 - Add parsing all metrics from IP SLA tests, change to group name base regex
 # 20/04/2017 - Added user friendly name in TOS key tag
 # 27/04/2017 - Added additional pattern to IP SLA test
-#
-#
+# 27/04/2017 - Parse variable to name bug fixing
 
 from zabbix.api import ZabbixAPI
 import json
@@ -295,14 +294,15 @@ class ZabbixReader():
 	
 	    # looking for variable in item name (ex. $1, $2...)
 	    var_match = re.search('.*\$([1-9]){1}.*',_iname)
-	
+	    print 'var_match: ', var_match
+		
 	    # if variable not exist do nothing with name
 	    if var_match is None:
 	    	return _iname
 	
 	    # read variable value
 	    try:
-	    	var_num = int(var_match.group('metric_name'))
+	    	var_num = int(var_match.group(1))
 	    except:
 	    	# do nothing if there is no group 1 matched - value not readable
 	    	return _iname
@@ -327,7 +327,8 @@ class ZabbixReader():
 		
 		tag_dic = {'metric_name':'', 'interface':'', 'location':'', 'tos':''}
 		metric_name = self.parseVariableInItemName(_ikey, _iname)
-		# print 'metric name: ', metric_name
+		print 'key: ', _ikey, 'name: ', _iname
+		print 'metric name: ', metric_name
 		for metric_regex in self.metric_names_regex:
 		        match = re.search(metric_regex,metric_name)
 
