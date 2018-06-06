@@ -60,7 +60,7 @@ class ZabbixReader():
                 ,'^(?P<metric_name>Packet loss) for CORP.* (?:IBM-(?P<tos1>96)-|1-(?P<tos>96)-).*'
 				,'^(?P<metric_name>Jitter) for CORP-.* (?:IBM-(?P<tos1>104)-|1-(?P<tos>104)-).*'
                 ,'^(?P<metric_name>Packet Delay) for CORP-.* (?:IBM-(?P<tos1>104)-|1-(?P<tos>104)-).*'
-                ,'^(?P<metric_name>Packet loss) for CORP.* (?:IBM-(?P<tos1>104)-|1-(?P<tos>104)-).*'                
+                ,'^(?P<metric_name>Packet loss) for CORP.* (?:IBM-(?P<tos1>104)-|1-(?P<tos>104)-).*'
 				,'^(?P<metric_name>Jitter) for CORP-.* (?:IBM-(?P<tos1>128)-|1-(?P<tos>128)-).*'
                 ,'^(?P<metric_name>Packet Delay) for CORP-.* (?:IBM-(?P<tos1>128)-|1-(?P<tos>128)-).*'
                 ,'^(?P<metric_name>Packet loss) for CORP.* (?:IBM-(?P<tos1>128)-|1-(?P<tos>128)-).*'
@@ -79,7 +79,7 @@ class ZabbixReader():
                 ,'^(?P<metric_name>Packet loss) for CORP.*(?:IBM-(?P<tos1>96)-|-(?P<tos>96)-).*'
                 ,'^(?P<metric_name>Jitter) for CORP-.*(?:IBM-(?P<tos1>104)-|-(?P<tos>104)-).*'
                 ,'^(?P<metric_name>Packet Delay) for CORP-.*(?:IBM-(?P<tos1>104)-|-(?P<tos>104)-).*'
-                ,'^(?P<metric_name>Packet loss) for CORP.*(?:IBM-(?P<tos1>104)-|-(?P<tos>104)-).*'                
+                ,'^(?P<metric_name>Packet loss) for CORP.*(?:IBM-(?P<tos1>104)-|-(?P<tos>104)-).*'
                 ,'^(?P<metric_name>Jitter) for CORP-.*(?:IBM-(?P<tos1>128)-|-(?P<tos>128)-).*'
                 ,'^(?P<metric_name>Packet Delay) for CORP-.*(?:IBM-(?P<tos1>128)-|-(?P<tos>128)-).*'
                 ,'^(?P<metric_name>Packet loss) for CORP.*(?:IBM-(?P<tos1>128)-|-(?P<tos>128)-).*'
@@ -89,8 +89,14 @@ class ZabbixReader():
                 ,'^(?P<metric_name>Jitter) for CORP-.*(?:IBM-(?P<tos1>184)-|-(?P<tos>184)-).*'
                 ,'^(?P<metric_name>Packet Delay) for CORP-.*(?:IBM-(?P<tos1>184)-|-(?P<tos>184)-).*'
                 ,'^(?P<metric_name>Packet loss) for CORP.*(?:IBM-(?P<tos1>184)-|-(?P<tos>184)-).*'
+                ### test per queue statistics
+                ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMDropByte64Speed)'
+                ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMDropPkt64Speed)'
+                ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPostPolicyBitRate)'
+                ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPostPolicyByte64Speed)'
+                ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPrePolicyBitRate)'
+                ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPrePolicyByte64Speed)'
 			]
-
 
     def get_stats_from_hname_json(self, _hname):
         """ Gets all items stats from defined hname """
@@ -117,20 +123,21 @@ class ZabbixReader():
                 else:
 		    value = history['value']
 		json_body = {
-                                "measurement": "zabbix_data",
-                                "tags": {
-                                    "client": str(host_groups),
-                                    "device": _hname,
-				    "interface": interface,
-				    "location": location,
-				"tos": tos,
-                                "itemid": history['itemid']
-                                },
-                                "time": int(history['clock']),
-                                "fields": {
-                                    metric_name: value
-                                }
-                                        }
+                    "measurement": "zabbix_data",
+                    "tags": {
+                            "client": str(host_groups),
+                            "device": _hname,
+                            "interface": interface,
+                            "location": location,
+                            "tos": tos,
+                            "itemid": history['itemid']
+                            },
+                    "time": int(history['clock']),
+                    "fields": 
+                            {
+                            metric_name: value
+                            }
+                    }
 		print json_body
 		results.append(json_body)
         to_return = json.dumps(results)
@@ -352,24 +359,28 @@ class ZabbixReader():
 					print 'group metric_name: %s' % match.group('metric_name') # metric_name
 					tag_dic['metric_name'] = match.group('metric_name')
 				except IndexError as ie:
-					print 'Error in metric name: group number invalid'
-					print ie
+					print 'Error in metric name: ' ,ie
 				try:
 					print 'group interface: %s' % match.group('interface') # interface
 					print 'group location: %s' % match.group('location') # location
 					tag_dic['interface'] = match.group('interface')
 					tag_dic['location'] = match.group('location')
 				except IndexError as ie:
-					print 'No interface or location: group number invalid'
-					print ie
+					print 'No interface or location: ', ie
 				try:
-					if match.group('tos') is not None:
+					if 'tos' in match.groupdict():
 						tag_dic['tos'] = self.mapTOSToName(match.group('tos'))
-					if match.group('tos1') is not None:
+					if 'tos1' in match.groupdict():
 						tag_dic['tos'] = self.mapTOSToName(match.group('tos1'))
+					#print match.groupdict()
+					if 'tosname' in match.groupdict():
+						tosname = match.group('tosname')
+						if tosname == 'RT-VOICE': 
+						    tosname = 'RT-Voice'
+						tag_dic['tos'] = tosname
 					print 'group [tos]: %s' % tag_dic['tos']
-				except:
-					pass
+				except Exception as e:
+					print  e
 				break
                 if match is None:
 		        print 'METRIC: %s do not match any pattern' % metric_name
