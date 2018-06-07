@@ -3,7 +3,7 @@
 """ ZabbixReader.py: Delivery class that read data from zabbix monitoring system. """
 
 __author__      = "Karol Kaczan"
-__version__		= "v0.4"
+__version__		= "v0.6"
 
 # #########################
 # Store version change here
@@ -14,7 +14,8 @@ __version__		= "v0.4"
 # 27/04/2017 - Added additional pattern to IP SLA test
 # 27/04/2017 - Parse variable to name bug fixing
 # 31/07/2017 - Get work with new TOS fields
-#
+# 06/06/2018 - Add new metrics (utilization per queue)
+# 07/06/2018 - Fix some problem and bugs
 
 from zabbix.api import ZabbixAPI
 import json
@@ -96,7 +97,9 @@ class ZabbixReader():
                 ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPostPolicyByte64Speed)'
                 ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPrePolicyBitRate)'
                 ,'CORP-(?P<location_not_used>[\w]+)[-_]{1}(?P<tosname>\S+) (?P<metric_name>cbQosCMPrePolicyByte64Speed)'
-			]
+                ### hardocoded to chache MERCEDES_KOMORNIKI
+                ,'^(?P<metric_name>Incoming traffic) on interface (?P<interface>\S+) \(CORP-(?P<location>\S+KOMORNIKI)[-_]{1}.*'
+        ]
 
     def get_stats_from_hname_json(self, _hname):
         """ Gets all items stats from defined hname """
@@ -230,6 +233,7 @@ class ZabbixReader():
             "limit": _limit
             }
         )
+        print result_hist_item['result']
         return result_hist_item['result']
 
 		
@@ -368,12 +372,13 @@ class ZabbixReader():
 				except IndexError as ie:
 					print 'No interface or location: ', ie
 				try:
-					if 'tos' in match.groupdict():
+					print match.groupdict()
+					if 'tos' in match.groupdict() and match.groupdict()['tos'] is not None:
 						tag_dic['tos'] = self.mapTOSToName(match.group('tos'))
-					if 'tos1' in match.groupdict():
+					if 'tos1' in match.groupdict() and match.groupdict()['tos1'] is not None:
 						tag_dic['tos'] = self.mapTOSToName(match.group('tos1'))
 					#print match.groupdict()
-					if 'tosname' in match.groupdict():
+					if 'tosname' in match.groupdict() and match.groupdict()['tosname'] is not None:
 						tosname = match.group('tosname')
 						if tosname == 'RT-VOICE': 
 						    tosname = 'RT-Voice'
@@ -391,6 +396,8 @@ class ZabbixReader():
     def getLocationFromHostName(self, _hname):
         """ gets name for metric which don't have name """
 
+        print 'Getting location from hname'
+
         # get all items names from hname
         metric_names = self.get_inames_from_hname(_hname)
 
@@ -407,8 +414,9 @@ class ZabbixReader():
                     else:
                         return location
 		else:
-			print 'TAG::location not set for %s' % _hname
-            return location
+			pass
+			#print 'TAG::location not set for %s' % _hname
+        return location
 
     def mapTOSToName(self, _tos):
         """ Maps TOS to user friendly name """
